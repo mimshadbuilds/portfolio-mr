@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /portfolio/content {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null
+        && request.auth.token.email == 'mimshad.cse41@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+  }
+}

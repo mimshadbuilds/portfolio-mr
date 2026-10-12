@@ -1,50 +1,57 @@
-# React + TypeScript + Vite
+# Mimshad's Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React, TypeScript, and Vite portfolio hosted on Firebase Hosting. Portfolio
+content is backed by Cloud Firestore and can be managed through a protected
+admin panel.
 
-Currently, two official plugins are available:
+## Admin panel setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The admin editor uses Firebase Authentication with email/password and writes
+the `portfolio/content` document in Cloud Firestore. The public portfolio can
+read this document; only the verified `mimshad.cse41@gmail.com` account can
+change it.
 
-## Expanding the ESLint configuration
+1. In the Firebase console for the configured `portfolio-mr` project, enable
+   **Authentication → Sign-in method → Email/Password**.
+2. Create the `mimshad.cse41@gmail.com` user under **Authentication → Users**.
+   Do not enable public account registration. Sign in at `/admin` and verify
+   the email address before editing.
+3. Create a Cloud Firestore database if the project does not have one.
+4. Deploy the included database rules and the site:
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+   ```sh
+   npm install
+   npm run build
+   firebase deploy --only firestore:rules,hosting
+   ```
 
-- Configure the top-level `parserOptions` property like this:
+   The Firebase CLI must be installed and authenticated to the configured
+   project. The rules are in `firestore.rules`; they allow public reads and
+   require the verified admin email for every write.
+5. Open `https://<your-host>/admin` and sign in. The editor supports profile and
+   about content, project cards, skill groups, and blog links. **Save & publish**
+   writes the changes to Firestore and updates the public portfolio.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+The initial content is provided by `src/data/portfolio.ts`. If no Firestore
+document exists, the site displays these defaults until the first save. If the
+database is unavailable or rules are not deployed, the public site retains the
+defaults and the admin panel reports the Firebase error.
+
+Firebase's Spark plan is no-cost within its current quotas. Review Firebase's
+[pricing plans](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)
+and [Firestore pricing](https://firebase.google.com/docs/firestore/pricing)
+before enabling paid features or upgrading the project.
+
+## Development
+
+```sh
+npm install
+npm run dev
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Validation
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```sh
+npm run lint
+npm run build
 ```
