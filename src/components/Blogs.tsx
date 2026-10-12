@@ -19,31 +19,31 @@ export default function Blogs() {
         </div>
 
         {content.blogs.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
             {content.blogs.map((blog) => (
               <article
                 key={blog.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 transition hover:border-sky-400/30"
+                className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 transition duration-200 hover:-translate-y-1 hover:border-sky-400/30"
               >
                 {blog.image && (
                   <img
                     src={blog.image}
-                    alt=""
+                    alt={`${blog.title} cover`}
                     loading="lazy"
-                    className="h-48 w-full object-cover"
+                    className="h-36 w-full object-cover sm:h-40"
                   />
                 )}
-                <div className="p-6">
+                <div className="flex flex-1 flex-col p-5">
                   <p className="font-mono text-xs text-sky-300">{blog.date}</p>
-                  <h3 className="mt-3 text-lg font-semibold text-white">
+                  <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-6 text-white">
                     {blog.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-400">
                     {blog.description}
                   </p>
                   {blog.tags.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {blog.tags.map((tag) => (
+                      {blog.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
                           className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300"
@@ -51,6 +51,11 @@ export default function Blogs() {
                           {tag}
                         </span>
                       ))}
+                      {blog.tags.length > 3 && (
+                        <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-400">
+                          +{blog.tags.length - 3}
+                        </span>
+                      )}
                     </div>
                   )}
                   {blog.url && (
@@ -58,7 +63,7 @@ export default function Blogs() {
                       href={blog.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
+                      className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-sky-300 transition hover:text-sky-200"
                     >
                       Read article <span aria-hidden="true">↗</span>
                     </a>
