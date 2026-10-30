@@ -21,7 +21,10 @@ change it.
 
    ```sh
    npm install
+      
    npm run build
+   npx --yes firebase-tools deploy --only hosting
+
    firebase deploy --only firestore:rules,hosting
    ```
 

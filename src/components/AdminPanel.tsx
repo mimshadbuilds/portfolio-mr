@@ -12,19 +12,23 @@ import {
 import {
   ADMIN_EMAIL,
   DEFAULT_PORTFOLIO,
+  DEFAULT_SKILL_LEVEL,
   type PortfolioBlog,
   type PortfolioContent,
+  type PortfolioEducation,
   type PortfolioProject,
 } from "../data/portfolio";
 import { usePortfolio } from "../context/PortfolioContext";
+import ListField from "./ListField";
 
-type AdminTab = "profile" | "projects" | "skills" | "blogs";
+type AdminTab = "profile" | "projects" | "skills" | "blogs" | "education";
 
 const tabs: { id: AdminTab; label: string }[] = [
   { id: "profile", label: "Profile & about" },
   { id: "projects", label: "Projects" },
   { id: "skills", label: "Skills" },
   { id: "blogs", label: "Blogs" },
+  { id: "education", label: "Education" },
 ];
 
 const controlClass =
@@ -123,6 +127,7 @@ export default function AdminPanel() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isRefreshingVerification, setIsRefreshingVerification] =
     useState(false);
+  const [invalidItemId, setInvalidItemId] = useState<string | null>(null);
 
   useEffect(() => {
     return onAuthStateChanged(
@@ -135,6 +140,14 @@ export default function AdminPanel() {
   useEffect(() => {
     setDraft(content);
   }, [content]);
+
+  useEffect(() => {
+    if (invalidItemId) {
+      document
+        .getElementById("invalid-card")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [invalidItemId]);
 
   const authorized = user?.email?.toLowerCase() === ADMIN_EMAIL;
 
@@ -204,16 +217,43 @@ export default function AdminPanel() {
 
   async function handleSave() {
     setSaveMessage("");
+    setInvalidItemId(null);
     if (!draft.profile.name.trim()) {
       setSaveMessage("Could not save changes: display name is required.");
       return;
     }
-    if (draft.projects.some((project) => !project.title.trim())) {
-      setSaveMessage("Could not save changes: every project needs a title.");
+    const untitledProject = draft.projects.find(
+      (project) => !project.title.trim(),
+    );
+    if (untitledProject) {
+      const position = draft.projects.indexOf(untitledProject) + 1;
+      setInvalidItemId(untitledProject.id);
+      setTab("projects");
+      setSaveMessage(
+        `Could not save changes: project #${position} is missing a title. Fill in its title (or remove the card), then save again.`,
+      );
       return;
     }
-    if (draft.blogs.some((blog) => !blog.title.trim())) {
-      setSaveMessage("Could not save changes: every blog post needs a title.");
+    const untitledBlog = draft.blogs.find((blog) => !blog.title.trim());
+    if (untitledBlog) {
+      const position = draft.blogs.indexOf(untitledBlog) + 1;
+      setInvalidItemId(untitledBlog.id);
+      setTab("blogs");
+      setSaveMessage(
+        `Could not save changes: blog post #${position} is missing a title. Fill in its title (or remove the card), then save again.`,
+      );
+      return;
+    }
+    const degreelessEducation = draft.education.find(
+      (entry) => !entry.degree.trim(),
+    );
+    if (degreelessEducation) {
+      const position = draft.education.indexOf(degreelessEducation) + 1;
+      setInvalidItemId(degreelessEducation.id);
+      setTab("education");
+      setSaveMessage(
+        `Could not save changes: education entry #${position} is missing a degree/title. Fill it in (or remove the card), then save again.`,
+      );
       return;
     }
 
@@ -254,6 +294,7 @@ export default function AdminPanel() {
 
       await getIdToken(currentUser, true);
       await saveContent(draft);
+      setInvalidItemId(null);
       setSaveMessage("Changes saved and published to your portfolio.");
     } catch (saveError) {
       setSaveMessage(`Could not save changes: ${errorMessage(saveError)}`);
@@ -277,6 +318,9 @@ export default function AdminPanel() {
     key: keyof PortfolioProject,
     value: string | string[],
   ) {
+    if (key === "title" && String(value).trim()) {
+      setInvalidItemId((current) => (current === id ? null : current));
+    }
     setDraft((current) => ({
       ...current,
       projects: current.projects.map((project) =>
@@ -286,10 +330,29 @@ export default function AdminPanel() {
   }
 
   function updateBlog(id: string, key: keyof PortfolioBlog, value: string | string[]) {
+    if (key === "title" && String(value).trim()) {
+      setInvalidItemId((current) => (current === id ? null : current));
+    }
     setDraft((current) => ({
       ...current,
       blogs: current.blogs.map((blog) =>
         blog.id === id ? { ...blog, [key]: value } : blog,
+      ),
+    }));
+  }
+
+  function updateEducation(
+    id: string,
+    key: keyof PortfolioEducation,
+    value: string,
+  ) {
+    if (key === "degree" && value.trim()) {
+      setInvalidItemId((current) => (current === id ? null : current));
+    }
+    setDraft((current) => ({
+      ...current,
+      education: current.education.map((entry) =>
+        entry.id === id ? { ...entry, [key]: value } : entry,
       ),
     }));
   }
@@ -578,20 +641,63 @@ export default function AdminPanel() {
                       }))
                     }
                   />
-                  <TextArea
-                    label="About paragraphs"
-                    value={draft.about.paragraphs.join("\n")}
-                    onChange={(value) =>
+                  <ListField
+                    label="About paragraphs (one per line)"
+                    items={draft.about.paragraphs}
+                    onChange={(items) =>
                       setDraft((current) => ({
                         ...current,
-                        about: {
-                          ...current.about,
-                          paragraphs: value.split("\n"),
-                        },
+                        about: { ...current.about, paragraphs: items },
                       }))
                     }
+                    multiline
                     rows={6}
                     placeholder="Write one paragraph on each line"
+                  />
+                  <div>
+                    <TextArea
+                      label="Programming journey"
+                      value={draft.about.journey}
+                      onChange={(value) =>
+                        setDraft((current) => ({
+                          ...current,
+                          about: { ...current.about, journey: value },
+                        }))
+                      }
+                      rows={4}
+                      placeholder="How you got into programming and where it has taken you"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Shown in the &ldquo;My journey&rdquo; card on the About section.
+                    </p>
+                  </div>
+                  <div>
+                    <TextArea
+                      label="What I enjoy building"
+                      value={draft.about.workStyle}
+                      onChange={(value) =>
+                        setDraft((current) => ({
+                          ...current,
+                          about: { ...current.about, workStyle: value },
+                        }))
+                      }
+                      rows={4}
+                      placeholder="The kind of work and problems you enjoy most"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Shown in the &ldquo;What I enjoy building&rdquo; card on the About section.
+                    </p>
+                  </div>
+                  <ListField
+                    label="Hobbies & interests (comma-separated)"
+                    items={draft.about.hobbies}
+                    onChange={(items) =>
+                      setDraft((current) => ({
+                        ...current,
+                        about: { ...current.about, hobbies: items },
+                      }))
+                    }
+                    placeholder="Cricket, Painting, Reading"
                   />
                   <Field
                     label="Resume URL"
@@ -605,6 +711,148 @@ export default function AdminPanel() {
                   />
                 </div>
               </PanelCard>
+
+              <PanelCard
+                title="Contact section"
+                description="Shown as contact cards on the portfolio. Leave phone or WhatsApp empty to hide that card."
+              >
+                <div className="grid gap-5 md:grid-cols-2">
+                  <Field
+                    label="Email address"
+                    type="email"
+                    value={draft.contact.email}
+                    onChange={(value) =>
+                      setDraft((current) => ({
+                        ...current,
+                        contact: { ...current.contact, email: value },
+                      }))
+                    }
+                  />
+                  <Field
+                    label="Phone number (optional)"
+                    type="tel"
+                    value={draft.contact.phone}
+                    onChange={(value) =>
+                      setDraft((current) => ({
+                        ...current,
+                        contact: { ...current.contact, phone: value },
+                      }))
+                    }
+                    placeholder="+880 1XXX-XXXXXX"
+                  />
+                  <Field
+                    label="WhatsApp number (optional)"
+                    type="tel"
+                    value={draft.contact.whatsapp}
+                    onChange={(value) =>
+                      setDraft((current) => ({
+                        ...current,
+                        contact: { ...current.contact, whatsapp: value },
+                      }))
+                    }
+                    placeholder="Digits only, e.g. 8801XXXXXXXXX"
+                  />
+                </div>
+              </PanelCard>
+            </>
+          )}
+
+          {tab === "education" && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-slate-400">
+                  Shown as a timeline in the Educational Qualification section.
+                  The degree/title is required on every entry.
+                </p>
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() =>
+                    setDraft((current) => ({
+                      ...current,
+                      education: [
+                        ...current.education,
+                        {
+                          id: newId(),
+                          degree: "",
+                          institution: "",
+                          period: "",
+                          description: "",
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + Add education
+                </button>
+              </div>
+              {draft.education.map((entry, index) => (
+                <PanelCard
+                  key={entry.id}
+                  title={entry.degree || `Education ${index + 1}`}
+                  highlight={invalidItemId === entry.id}
+                  action={
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-rose-300 hover:text-rose-200"
+                      onClick={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          education: current.education.filter(
+                            (item) => item.id !== entry.id,
+                          ),
+                        }))
+                      }
+                    >
+                      Remove
+                    </button>
+                  }
+                >
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <Field
+                      label="Degree / title"
+                      value={entry.degree}
+                      onChange={(value) => updateEducation(entry.id, "degree", value)}
+                      placeholder="B.Sc. in Computer Science & Engineering"
+                    />
+                    <Field
+                      label="Institution"
+                      value={entry.institution}
+                      onChange={(value) =>
+                        updateEducation(entry.id, "institution", value)
+                      }
+                      placeholder="University name"
+                    />
+                    <Field
+                      label="Period"
+                      value={entry.period}
+                      onChange={(value) => updateEducation(entry.id, "period", value)}
+                      placeholder="2020 – 2024"
+                    />
+                    <div className="md:col-span-2">
+                      <TextArea
+                        label="Details"
+                        value={entry.description}
+                        onChange={(value) =>
+                          updateEducation(entry.id, "description", value)
+                        }
+                        rows={4}
+                        placeholder="Coursework, thesis, GPA, honors, clubs, relevant achievements…"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Tip: press Enter for a new line — each line can hold one
+                        highlight (coursework, achievement, etc.).
+                      </p>
+                    </div>
+                  </div>
+                </PanelCard>
+              ))}
+              {draft.education.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-slate-700 px-6 py-10 text-center text-sm text-slate-500">
+                  No education entries yet. Click &ldquo;+ Add education&rdquo; to
+                  create one.
+                </p>
+              )}
             </>
           )}
 
@@ -633,6 +881,8 @@ export default function AdminPanel() {
                           repository: "",
                           liveSite: "",
                           image: "",
+                          challenges: [],
+                          improvements: [],
                         },
                       ],
                     }))
@@ -645,6 +895,7 @@ export default function AdminPanel() {
                 <PanelCard
                   key={project.id}
                   title={project.title || `New project ${index + 1}`}
+                  highlight={invalidItemId === project.id}
                   action={
                     <button
                       type="button"
@@ -685,17 +936,36 @@ export default function AdminPanel() {
                         updateProject(project.id, "repository", value)
                       }
                     />
-                    <Field
+                    <ListField
                       label="Tech stack (comma-separated)"
-                      value={project.tech.join(", ")}
-                      onChange={(value) =>
-                        updateProject(
-                          project.id,
-                          "tech",
-                          value.split(",").map((item) => item.trim()).filter(Boolean),
-                        )
-                      }
+                      items={project.tech}
+                      onChange={(items) => updateProject(project.id, "tech", items)}
+                      placeholder="Next.js, TypeScript, Tailwind CSS"
                     />
+                    <div className="md:col-span-2">
+                      <ListField
+                        label="Challenges faced (one per line)"
+                        items={project.challenges}
+                        onChange={(items) =>
+                          updateProject(project.id, "challenges", items)
+                        }
+                        multiline
+                        rows={3}
+                        placeholder="Describe a challenge you solved"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <ListField
+                        label="Potential improvements & future plans (one per line)"
+                        items={project.improvements}
+                        onChange={(items) =>
+                          updateProject(project.id, "improvements", items)
+                        }
+                        multiline
+                        rows={3}
+                        placeholder="Describe a planned improvement"
+                      />
+                    </div>
                     <div className="md:col-span-2">
                       <TextArea
                         label="Description"
@@ -769,26 +1039,130 @@ export default function AdminPanel() {
                         }))
                       }
                     />
-                    <Field
-                      label="Skills (comma-separated)"
-                      value={group.skills.join(", ")}
-                      onChange={(value) =>
-                        setDraft((current) => ({
-                          ...current,
-                          skills: current.skills.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? {
-                                  ...item,
-                                  skills: value
-                                    .split(",")
-                                    .map((skill) => skill.trim())
-                                    .filter(Boolean),
+                    <div className="md:col-span-2">
+                      <p className="text-sm font-medium text-slate-300">
+                        Skills
+                      </p>
+                      <div className="mt-2 space-y-3">
+                        {group.skills.map((skill, skillIndex) => (
+                          <div
+                            key={`${skill.name}-${skillIndex}`}
+                            className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 p-3"
+                          >
+                            <input
+                              type="text"
+                              aria-label={`Skill ${skillIndex + 1} name`}
+                              className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-400"
+                              value={skill.name}
+                              placeholder="Skill name"
+                              onChange={(event) =>
+                                setDraft((current) => ({
+                                  ...current,
+                                  skills: current.skills.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? {
+                                          ...item,
+                                          skills: item.skills.map(
+                                            (currentSkill, currentIndex) =>
+                                              currentIndex === skillIndex
+                                                ? {
+                                                    ...currentSkill,
+                                                    name: event.target.value,
+                                                  }
+                                                : currentSkill,
+                                          ),
+                                        }
+                                      : item,
+                                  ),
+                                }))
+                              }
+                            />
+                            <label className="flex items-center gap-2 text-xs text-slate-400">
+                              Level
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                aria-label={`Skill ${skillIndex + 1} level`}
+                                className="w-20 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-sky-400"
+                                value={skill.level}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    skills: current.skills.map((item, itemIndex) =>
+                                      itemIndex === index
+                                        ? {
+                                            ...item,
+                                            skills: item.skills.map(
+                                              (currentSkill, currentIndex) =>
+                                                currentIndex === skillIndex
+                                                  ? {
+                                                      ...currentSkill,
+                                                      level: Math.min(
+                                                        100,
+                                                        Math.max(
+                                                          0,
+                                                          Number(event.target.value) || 0,
+                                                        ),
+                                                      ),
+                                                    }
+                                                  : currentSkill,
+                                            ),
+                                          }
+                                        : item,
+                                    ),
+                                  }))
                                 }
-                              : item,
-                          ),
-                        }))
-                      }
-                    />
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="text-sm font-semibold text-rose-300 hover:text-rose-200"
+                              onClick={() =>
+                                setDraft((current) => ({
+                                  ...current,
+                                  skills: current.skills.map((item, itemIndex) =>
+                                    itemIndex === index
+                                      ? {
+                                          ...item,
+                                          skills: item.skills.filter(
+                                            (_, currentIndex) =>
+                                              currentIndex !== skillIndex,
+                                          ),
+                                        }
+                                      : item,
+                                  ),
+                                }))
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className={buttonClass}
+                          onClick={() =>
+                            setDraft((current) => ({
+                              ...current,
+                              skills: current.skills.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...item,
+                                      skills: [
+                                        ...item.skills,
+                                        { name: "", level: DEFAULT_SKILL_LEVEL },
+                                      ],
+                                    }
+                                  : item,
+                              ),
+                            }))
+                          }
+                        >
+                          + Add skill
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </PanelCard>
               ))}
@@ -835,6 +1209,7 @@ export default function AdminPanel() {
                 <PanelCard
                   key={blog.id}
                   title={blog.title || `New post ${index + 1}`}
+                  highlight={invalidItemId === blog.id}
                   action={
                     <button
                       type="button"
@@ -873,16 +1248,11 @@ export default function AdminPanel() {
                       value={blog.date}
                       onChange={(value) => updateBlog(blog.id, "date", value)}
                     />
-                    <Field
+                    <ListField
                       label="Tags (comma-separated)"
-                      value={blog.tags.join(", ")}
-                      onChange={(value) =>
-                        updateBlog(
-                          blog.id,
-                          "tags",
-                          value.split(",").map((item) => item.trim()).filter(Boolean),
-                        )
-                      }
+                      items={blog.tags}
+                      onChange={(items) => updateBlog(blog.id, "tags", items)}
+                      placeholder="react, typescript"
                     />
                     <div className="md:col-span-2">
                       <TextArea
@@ -944,15 +1314,24 @@ function PanelCard({
   title,
   description,
   action,
+  highlight = false,
   children,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  highlight?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+    <div
+      id={highlight ? "invalid-card" : undefined}
+      className={`rounded-2xl border p-5 sm:p-6 transition ${
+        highlight
+          ? "border-rose-400/60 bg-rose-950/20 ring-2 ring-rose-400/30"
+          : "border-white/10 bg-white/[0.03]"
+      }`}
+    >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold text-white">{title}</h3>

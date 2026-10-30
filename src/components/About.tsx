@@ -31,42 +31,52 @@ export default function About() {
           </a>
         </div>
 
-        <div>
-          <div className="mb-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-gradient-to-r from-sky-400/60 to-transparent" />
-            <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
-              Toolkit
-            </h3>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-sky-400/25">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="font-mono text-xs text-sky-300">01</span>
+              <h3 className="text-sm font-semibold text-white">My journey</h3>
+            </div>
+            <p className="text-sm leading-7 text-slate-300">
+              {content.about.journey}
+            </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {content.skills.map((group, index) => (
-              <div
-                key={group.category}
-                className={`rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-sky-400/25 hover:bg-white/[0.05] ${
-                  index === 1 ? "sm:row-span-2" : ""
-                }`}
-              >
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="font-mono text-xs text-sky-300">
-                    0{index + 1}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-sky-400/25">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="font-mono text-xs text-sky-300">02</span>
+              <h3 className="text-sm font-semibold text-white">
+                What I enjoy building
+              </h3>
+            </div>
+            <p className="text-sm leading-7 text-slate-300">
+              {content.about.workStyle}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-sky-400/25">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="font-mono text-xs text-sky-300">03</span>
+              <h3 className="text-sm font-semibold text-white">
+                Beyond the code
+              </h3>
+            </div>
+            {content.about.hobbies.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {content.about.hobbies.map((hobby) => (
+                  <span
+                    key={hobby}
+                    className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300"
+                  >
+                    {hobby}
                   </span>
-                  <h4 className="text-sm font-semibold text-white">
-                    {group.category}
-                  </h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {group.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-sm text-slate-500">
+                Hobbies and interests will appear here once added.
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@ export default function Footer() {
         </a>
 
         <p className="text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} {content.profile.name}. Built with care.
+          © {new Date().getFullYear()} {content.profile.name}.
         </p>
 
         <div className="flex items-center gap-2">

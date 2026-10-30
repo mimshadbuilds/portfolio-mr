@@ -3,7 +3,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   DEFAULT_PORTFOLIO,
-  isPortfolioContent,
+  normalizePortfolioContent,
   type PortfolioContent,
 } from "../data/portfolio";
 import {
@@ -28,14 +28,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         }
 
         const data: unknown = snapshot.data();
-        if (!isPortfolioContent(data)) {
+        const normalized = normalizePortfolioContent(data);
+        if (!normalized) {
           setError(
             "Saved portfolio content has an unexpected format. Review the document in Firestore or restore the default content from the admin panel.",
           );
           return;
         }
 
-        setContent(data);
+        setContent(normalized);
         setError(null);
       },
       (snapshotError) => {

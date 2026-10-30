@@ -2,7 +2,10 @@ import { usePortfolio } from "../context/PortfolioContext";
 
 export default function Hero() {
   const { content } = usePortfolio();
-  const expertise = content.skills.flatMap((group) => group.skills).slice(0, 8);
+  const expertise = content.skills
+    .flatMap((group) => group.skills)
+    .map((skill) => skill.name)
+    .slice(0, 8);
 
   return (
     <section id="home" className="relative overflow-hidden bg-slate-950 text-white">
@@ -24,7 +27,7 @@ export default function Hero() {
               {content.profile.role}
             </p>
 
-            <p className="mt-6 max-w-xl text-lg text-slate-300 sm:text-xl">
+            <p className="mx-auto mt-6 max-w-xl text-lg text-slate-300 sm:text-xl md:max-lg:max-w-[44ch] md:max-lg:text-balance lg:mx-0">
               {content.profile.intro}
             </p>
 

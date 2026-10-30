@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { usePortfolio } from "../context/PortfolioContext";
 
 const accents = ["from-cyan-400/30", "from-violet-400/30", "from-emerald-400/30"];
@@ -83,13 +84,20 @@ export default function Projects() {
                   ))}
                 </div>
 
-                <div className="mt-6 flex gap-3 border-t border-white/10 pt-5">
+                <div className="mt-6 flex flex-wrap gap-3 border-t border-white/10 pt-5">
+                  <Link
+                    to={`/projects/${project.id}`}
+                    aria-label={`View details for ${project.title}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-400"
+                  >
+                    View details <span aria-hidden="true">→</span>
+                  </Link>
                   {project.liveSite && (
                     <a
                       href={project.liveSite}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-400"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-sky-300/50 hover:text-sky-200"
                     >
                       Live site <span aria-hidden="true">↗</span>
                     </a>

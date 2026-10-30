@@ -1,15 +1,42 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import "./App.css";
 import About from "./components/About";
+import Contact from "./components/Contact";
+import Education from "./components/Education";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
+import ProjectDetail from "./components/ProjectDetail";
 import Projects from "./components/Projects";
 import Blogs from "./components/Blogs";
+import Skills from "./components/Skills";
 import { usePortfolio } from "./context/PortfolioContext";
 import { PortfolioProvider } from "./context/PortfolioProvider";
 
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
+
+function ScrollManager() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const target = document.getElementById(hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+
+  return null;
+}
 
 function PublicPortfolio() {
   const { error } = usePortfolio();
@@ -28,31 +55,40 @@ function PublicPortfolio() {
       <Header />
       <Hero />
       <Projects />
+      <Skills />
       <Blogs />
       <About />
+      <Education />
+      <Contact />
       <Footer />
     </div>
   );
 }
 
 function App() {
-  const isAdminRoute = window.location.pathname.replace(/\/+$/, "") === "/admin";
-
   return (
     <PortfolioProvider>
-      {isAdminRoute ? (
-        <Suspense
-          fallback={
-            <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm text-slate-300">
-              Loading admin panel…
-            </div>
-          }
-        >
-          <AdminPanel />
-        </Suspense>
-      ) : (
-        <PublicPortfolio />
-      )}
+      <BrowserRouter>
+        <ScrollManager />
+        <Routes>
+          <Route
+            path="/admin"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm text-slate-300">
+                    Loading admin panel…
+                  </div>
+                }
+              >
+                <AdminPanel />
+              </Suspense>
+            }
+          />
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="*" element={<PublicPortfolio />} />
+        </Routes>
+      </BrowserRouter>
     </PortfolioProvider>
   );
 }
